@@ -5,6 +5,7 @@ const session = require('express-session');
 const path = require('path');
 const { Pool } = require('pg');
 const fs = require('fs');
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(express.json());
@@ -79,17 +80,61 @@ app.post('/login', async (req, res) => {
   }
 });
 
+// Chatbot route
+app.post('/chatbot', async (req, res) => {
+  const { message } = req.body;
+  try {
+    const response = await fetch('https://api.openai.com/v1/engines/davinci-codex/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        prompt: message,
+        max_tokens: 150,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch chatbot response');
+    }
+
+    const data = await response.json();
+    const bot_response = data.choices[0].text.trim();
+    res.status(200).json({ bot_response });
+  } catch (err) {
+    console.error('Error fetching chatbot response:', err);
+    res.status(500).json({ error: 'Failed to fetch chatbot response.' });
+  }
+});
+
 // Store chat transcript
 app.post('/chat', async (req, res) => {
-  const { message, bot_response } = req.body;
+  const { message } = req.body;
   if (!req.session.userId) {
     return res.status(403).json({ error: 'User not logged in.' });
   }
-  const query =
-    'INSERT INTO transcripts (user_id, message, bot_response) VALUES ($1, $2, $3)';
+
   try {
+    const chatbotResponse = await fetch('http://localhost:3000/chatbot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    if (!chatbotResponse.ok) {
+      throw new Error('Failed to fetch chatbot response');
+    }
+
+    const chatbotData = await chatbotResponse.json();
+    const bot_response = chatbotData.bot_response;
+
+    const query = 'INSERT INTO transcripts (user_id, message, bot_response) VALUES ($1, $2, $3)';
     await pool.query(query, [req.session.userId, message, bot_response]);
-    res.status(201).json({ message: 'Chat stored successfully.' });
+    res.status(201).json({ message: 'Chat stored successfully.', bot_response });
   } catch (err) {
     console.error('Error storing chat:', err);
     res.status(500).json({ error: 'Failed to store chat.' });

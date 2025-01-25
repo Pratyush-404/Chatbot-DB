@@ -14,3 +14,24 @@ body {
     height: 300px;
     overflow-y: scroll;
 }
+
+#chatBox {
+    border: 1px solid #ccc;
+    padding: 10px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+    height: 300px;
+    overflow-y: scroll;
+}
+
+#userMessage {
+    width: 70%;
+    padding: 10px;
+    margin-right: 10px;
+}
+
+#sendMessageButton, #fetchTranscriptsButton {
+    padding: 10px 20px;
+    cursor: pointer;
+}

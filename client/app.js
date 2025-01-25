@@ -61,12 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (message.trim() === '') return;
 
     try {
-      const response = await fetch('/chat', {
+      const response = await fetch('/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message, bot_response: 'Bot response placeholder' }),
+        body: JSON.stringify({ message }),
       });
 
       if (response.ok) {
